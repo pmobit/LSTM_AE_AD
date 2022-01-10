@@ -1,0 +1,332 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon May 31 20:56:25 2021
+
+@author: pooyan
+"""
+
+
+#Stacked LSTM+incresed unut number
+n_unit=50
+model = Sequential()
+model.add(LSTM(n_unit, input_shape=(n_features,dim3),return_sequences=True))
+model.add(Dropout(0.1)) #recommnedded rate is 0.1
+model.add(LSTM(n_unit, input_shape=(n_features,dim3),return_sequences=True))
+model.add(Dropout(0.1)) #recommnedded rate is 0.1
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dropout(0.1)) #recommnedded rate is 0.1
+model.add(Dense(num_classes, activation = "softmax"))
+model.compile(optimizer=keras.optimizers.Adam(1e-4),loss=SparseCategoricalCrossentropy(), metrics=["accuracy"])
+model.summary()
+
+
+
+
+#Stacked LSTM+incresed unit 50, mse
+n_unit=50
+model = Sequential()
+model.add(LSTM(n_unit, input_shape=(n_features,dim3),return_sequences=True))
+model.add(Dropout(0.1)) #recommnedded rate is 0.1
+model.add(LSTM(n_unit, input_shape=(n_features,dim3),return_sequences=True))
+model.add(Dropout(0.1)) #recommnedded rate is 0.1
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dropout(0.1)) #recommnedded rate is 0.1
+model.add(Dense(num_classes, activation = "softmax"))
+model.compile(optimizer=keras.optimizers.Adam(1e-4),loss="mse", metrics=["accuracy"])
+model.summary()
+
+#Autoencoder+Crossenrophy
+
+
+
+model = Sequential()
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dropout(rate=0.2))
+model.add(RepeatVector(dim3)) 
+model.add(LSTM(n_unit, return_sequences=True))
+model.add(Dropout(rate=0.2))
+model.add(TimeDistributed(Dense(n_features))) #applies a specific layer such as Dense to every sample it receives as an input. 
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dense(num_classes, activation = "softmax"))
+model.compile(optimizer=keras.optimizers.Adam(1e-4),loss=SparseCategoricalCrossentropy(), metrics=["accuracy"])
+model.summary()
+
+
+#mse
+
+model = Sequential()
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dropout(rate=0.2))
+model.add(RepeatVector(dim3)) #Repeats the input n times, as we want the output shape to be (30,1)
+model.add(LSTM(n_unit, return_sequences=True))
+model.add(Dropout(rate=0.2))
+model.add(TimeDistributed(Dense(n_features))) #applies a specific layer such as Dense to every sample it receives as an input. 
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dense(num_classes, activation = "softmax"))
+model.compile(optimizer=keras.optimizers.Adam(1e-4),loss='mse', metrics=["accuracy"])
+model.summary()
+
+
+#lstm autoencoders with linear softmax
+
+num_classes=2
+from keras.layers import RepeatVector
+from keras.layers import TimeDistributed
+
+model = Sequential()
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dropout(rate=0.2))
+model.add(RepeatVector(dim3)) 
+model.add(LSTM(n_unit, return_sequences=True))
+model.add(Dense(num_classes, activation = "linear"))
+model.add(Dropout(rate=0.2))
+model.add(TimeDistributed(Dense(n_features))) #applies a specific layer such as Dense to every sample it receives as an input. 
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dense(num_classes, activation = "softmax"))
+model.compile(optimizer=keras.optimizers.Adam(1e-4),loss=SparseCategoricalCrossentropy(), metrics=["accuracy"])
+model.summary()
+
+
+#mse softmax svm
+model = Sequential()
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dropout(rate=0.2))
+model.add(RepeatVector(dim3)) 
+model.add(LSTM(n_unit, return_sequences=True))
+model.add(Dense(num_classes, activation = "linear"))
+model.add(Dropout(rate=0.2))
+model.add(TimeDistributed(Dense(n_features))) #applies a specific layer such as Dense to every sample it receives as an input. 
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dense(num_classes, activation = "softmax"))
+model.compile(optimizer=keras.optimizers.Adam(1e-4),loss= "mse", metrics=["accuracy"])
+model.summary()
+
+#linear 
+
+model = Sequential()
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dropout(rate=0.2))
+model.add(RepeatVector(dim3)) 
+model.add(LSTM(n_unit, return_sequences=True))
+model.add(Dense(num_classes, activation = "linear"))
+model.add(Dropout(rate=0.2))
+model.add(TimeDistributed(Dense(n_features))) #applies a specific layer such as Dense to every sample it receives as an input. 
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dense(num_classes, activation = "linear"))
+model.compile(optimizer=keras.optimizers.Adam(1e-4),loss=SparseCategoricalCrossentropy(), metrics=["accuracy"])
+model.summary()
+
+
+#hinge
+from tensorflow.keras import regularizers
+
+model = Sequential()
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dropout(rate=0.2))
+model.add(RepeatVector(dim3)) 
+model.add(LSTM(n_unit, return_sequences=True))
+model.add(Dense(num_classes, activation = "linear")
+model.add(Dropout(rate=0.2))
+model.add(TimeDistributed(Dense(n_features))) #applies a specific layer such as Dense to every sample it receives as an input. 
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dense(num_classes, activation = "softmax"))
+model.compile(optimizer=keras.optimizers.Adam(1e-4),loss="categorical_hinge", metrics=["accuracy"])
+model.summary()
+
+
+
+#gru
+
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+
+from keras.layers import GRU
+
+model = Sequential()
+model.add(GRU(n_unit, input_shape=(n_features,dim3)))
+model.add(Dropout(0.1)) #recommnedded rate is 0.1
+#model.add(Dense(1, activation="sigmoid"))
+model.add(Dense(num_classes, activation = "softmax"))
+#model.add(Dense(num_classes, activation = "sigmoid"))
+model.compile(optimizer=keras.optimizers.Adam(1e-4),loss= SparseCategoricalCrossentropy(), metrics=["accuracy"])
+
+#model.compile(optimizer=keras.optimizers.Adam(1e-4),loss='mse', metrics=["accuracy"])
+
+
+model.summary()
+
+
+#stackedGRU
+
+n_unit=50
+model = Sequential()
+model.add(GRU(n_unit, input_shape=(n_features,dim3),return_sequences=True))
+model.add(Dropout(0.1)) #recommnedded rate is 0.1
+model.add(GRU(n_unit, input_shape=(n_features,dim3),return_sequences=True))
+model.add(Dropout(0.1)) #recommnedded rate is 0.1
+model.add(GRU(n_unit, input_shape=(n_features,dim3)))
+model.add(Dropout(0.1)) #recommnedded rate is 0.1
+model.add(Dense(num_classes, activation = "softmax"))
+model.compile(optimizer=keras.optimizers.Adam(1e-4),loss=SparseCategoricalCrossentropy(), metrics=["accuracy"])
+model.summary()
+
+
+#mae
+
+model = Sequential()
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dropout(rate=0.2))
+model.add(RepeatVector(dim3)) #Repeats the input n times, as we want the output shape to be (30,1)
+model.add(LSTM(n_unit, return_sequences=True))
+model.add(Dropout(rate=0.2))
+model.add(TimeDistributed(Dense(n_features))) #applies a specific layer such as Dense to every sample it receives as an input. 
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dense(num_classes, activation = "softmax"))
+model.compile(optimizer=keras.optimizers.Adam(1e-4),loss='mae', metrics=["accuracy"])
+model.summary()
+
+#lstm sigmoid
+
+
+model = Sequential()
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dropout(0.1)) #recommnedded rate is 0.1
+#model.add(Dense(1, activation="sigmoid"))
+model.add(Dense(num_classes, activation = "softmax"))
+model.compile(optimizer=keras.optimizers.Adam(1e-4),loss=SparseCategoricalCrossentropy(), metrics=["accuracy"])
+model.summary()
+
+#predictiondecoder
+
+
+#linear 
+
+model = Sequential()
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+model.add(Dropout(rate=0.2))
+model.add(RepeatVector(dim3)) 
+model.add(LSTM(n_unit, return_sequences=True))
+model.add(Dense(num_classes, activation = "linear"))
+model.add(Dropout(rate=0.2))
+model.add(TimeDistributed(Dense(n_features))) #applies a specific layer such as Dense to every sample it receives as an input. 
+model.add(LSTM(n_unit, input_shape=(n_features,dim3)))
+
+model.add(Dense(num_classes, activation = "softmax"))
+model.compile(optimizer=keras.optimizers.Adam(1e-4),loss=SparseCategoricalCrossentropy(), metrics=["accuracy"])
+model.summary()
+
+
+###fit
+
+history=model.fit(X_train, y_train, validation_data=(X_validation, y_validation),epochs = 50, batch_size = 128, verbose = 1)
+
+##
+pred = model.predict(X_train)
+y_pred = [0 if y[0]>y[1] else 1 for y in pred]   #thereshold=50 y[0]>0.50
+
+cm=confusion_matrix(y_train,y_pred)
+print("train set")
+print("0:%s - 1:%s"%(my_ec.inverse_transform([0])[0],my_ec.inverse_transform([1])[0]))
+print(cm)
+
+accuracy = (cm[0,0]+cm[1,1])/cm.sum()
+precision= (cm[0,0])/(cm[0,0]+cm[1,0])
+recall = (cm[0,0])/(cm[0,0]+cm[0,1])
+f1=2*precision*recall/(precision+recall)
+
+print("accuracy=%.2f f1score=%.2f"%(accuracy, f1))
+print("precision=%.2f recall=%.2f"%(precision, recall))
+
+pred = model.predict(X_test)
+y_pred = [0 if y[0]>y[1] else 1 for y in pred]
+
+print(pred)
+
+cm=confusion_matrix(y_test,y_pred)
+print("test set")
+print("0:%s - 1:%s"%(my_ec.inverse_transform([0])[0],my_ec.inverse_transform([1])[0]))
+print(cm)
+
+
+accuracy = (cm[0,0]+cm[1,1])/cm.sum() #tp+tn/sum
+precision= (cm[0,0])/(cm[0,0]+cm[1,0]) #tp/tp+fp
+recall = (cm[0,0])/(cm[0,0]+cm[0,1]) #tp/tp+fn
+f1=2*precision*recall/(precision+recall)
+
+print("accuracy=%.2f f1score=%.2f"%(accuracy, f1))
+
+
+print("precision=%.2f recall=%.2f"%(precision, recall))
+
+
+###3
+
+print(pred.shape)
+print(X_test.shape)
+print(y_pred)
+print(pred)
+print(X_test)
+print(y_test)
+
+pred = model.predict(X_test, verbose=0)
+test_mae_loss = np.mean(np.abs(y_pred), axis=1)
+
+plt.figure(figsize=(10,10))
+plt.hist(test_mae_loss, bins=50)
+plt.xlabel('Test MAE loss')
+plt.ylabel('Number of samples');
+plt.show()
+
+
+from keras_sequential_ascii import keras2ascii
+keras2ascii(model)
+
+
+
+    import joblib
+    import pickle
+filename = 'finalized_model.sav'
+pickle.dump(model, open(filename, 'wb'))
+  filename = '/Users/pooyan/Desktop/model.joblib'
+    joblib.dump(model, filename)
+    
+    
+    
+    
+model.save('/Users/pooyan/Desktop/')
+
+model = keras.models.load_model('/Users/pooyan/Desktop/')
+
+model.output_shape
+model.get_config()
+
+#split data into train. validation, and test
+X_train, X_test, y_train, y_test = train_test_split(all_data,all_label,test_size=0.1,shuffle=False)
+X_train, X_validation, y_train, y_validation = train_test_split(X_train,y_train,test_size=0.1,shuffle=True)
+
+
+pred = model.predict(X_test)
+y_pred = [0 if y[0]>0.01 else 1 for y in pred]
+
+cm=confusion_matrix(y_test,y_pred)
+print("test set")
+print("0:%s - 1:%s"%(my_ec.inverse_transform([0])[0],my_ec.inverse_transform([1])[0]))
+print(cm)
+
+
+accuracy = (cm[0,0]+cm[1,1])/cm.sum() #tp+tn/sum
+precision= (cm[0,0])/(cm[0,0]+cm[1,0]) #tp/tp+fp
+recall = (cm[0,0])/(cm[0,0]+cm[0,1]) #tp/tp+fn
+f1=2*precision*recall/(precision+recall)
+
+print("accuracy=%.2f f1score=%.2f"%(accuracy, f1))
+
+
+print("precision=%.2f recall=%.2f"%(precision, recall))
+
+#thereshold=50 y[0]>0.50
+
+

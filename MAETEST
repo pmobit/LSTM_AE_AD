@@ -1,0 +1,502 @@
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Mar  8 22:23:00 2021
+
+@author: pooyan
+"""
+
+### import required libraries and pkgs ###
+import glob
+import os
+import librosa
+import numpy as np
+#from sklearn.model_selection import KFold
+#from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+#import tensorflow as tf
+from tensorflow import keras
+import matplotlib.pyplot as plt
+
+
+
+
+
+### Define feature extraction ### defualt=1024 in MATLAB
+#MytimeWindow=1024
+MySampleRate=44100
+#y=audio time series
+#sr=sample rate
+#fn_nfft=fft length 
+#win_length=window size
+#hop_length= overlap length
+
+
+
+
+#get all normal and anomalies files from directory
+
+parent_dir = '/Users/pooyan/Desktop/cmms/class/'
+sub_dir = 'normal/'
+file_ext='*.ogg'
+#all_Normalfiles = glob.glob(os.path.join(parent_dir, sub_dir, file_ext))
+all_files = glob.glob(os.path.join(parent_dir, sub_dir, file_ext))
+
+
+
+#test for a single file
+FilePath = all_files[0]
+
+#load file
+
+y,sr = librosa.load(FilePath, MySampleRate)
+
+
+start_i = 0
+end_i = len(y) # to read whole file
+
+signal = y[start_i:end_i]
+centroid = librosa.feature.spectral_centroid(y=signal,sr=sr)
+slope = librosa.feature.melspectrogram(y=signal,sr=sr, n_mels=1)
+
+my_features = np.concatenate((centroid,slope),axis=0)
+
+#check the dimentions
+print(y.shape)
+print(signal.shape)
+print(centroid.shape)
+print(slope.shape)
+print(my_features.shape)
+
+
+def Myextract_features(filePath, sampleRate=44100):
+    
+    signal,sr = librosa.load(filePath, sampleRate)
+
+    centroid = librosa.feature.spectral_centroid(y=signal,sr=sr)
+    slope = librosa.feature.melspectrogram(y=signal,sr=sr, n_mels=1)
+
+    features = np.concatenate((centroid,slope),axis=0)
+
+    return features
+
+
+my_features = Myextract_features(all_files[1])
+
+import pandas as pd
+
+filenames = pd.read_csv('/Users/pooyan/Documents/CMMS/normal.csv')
+#convert filenames from dataframe to array
+filenames = np.array(filenames['name'].values)
+#read all noraml files
+parent_dir = '/Users/pooyan/Desktop/data_cmms/skytraina_06252019/turbo/'
+sub_dir = 'combine/'
+file_ext='*.ogg'
+#all_Normalfiles = glob.glob(os.path.join(parent_dir, sub_dir, file_ext))[0:3500]
+all_Normalfiles = parent_dir +sub_dir+ filenames #[0:1500]
+
+
+all_noraml_features = [] #define an empty array
+all_noraml_labels = []
+for i in range(0,len(all_Normalfiles)):
+    my_features = Myextract_features(all_Normalfiles[i])
+    all_noraml_features.append(my_features)
+    all_noraml_labels.append("normal")
+
+#use reshape to conver outputs into arrays
+dim_1 = len(all_Normalfiles)
+dim_2 = my_features.shape[0] #number of features
+dim_3 = my_features.shape[1]
+all_noraml_features = np.asarray(all_noraml_features).reshape(dim_1, dim_2, dim_3)
+all_noraml_labels = np.asarray(all_noraml_labels).reshape(dim_1)
+
+#check the dimentions
+print(all_noraml_features.shape)
+print(all_noraml_labels.shape)
+
+#read all anoamly files
+filenames = pd.read_csv('/Users/pooyan/Documents/CMMS/anomaly.csv')
+#convert filenames from dataframe to array
+filenames = np.array(filenames['name'].values)
+
+parent_dir = '/Users/pooyan/Desktop/data_cmms/skytraina_06252019/turbo/'
+sub_dir = 'combine/'
+file_ext='*.ogg'
+#all_Anomalyfiles = glob.glob(os.path.join(parent_dir, sub_dir, file_ext))[0:3500]
+all_Anomalyfiles = parent_dir +sub_dir+ filenames #[0:1300]
+
+all_anomaly_features = [] #define an empty array
+all_anomaly_labels = []
+for i in range(0,len(all_Anomalyfiles)):
+    my_features = Myextract_features(all_Anomalyfiles[i])
+    all_anomaly_features.append(my_features)
+    all_anomaly_labels.append("anomaly")
+    
+
+#read dryer files    
+ 
+parent_dir = '/Users/pooyan/Desktop/'
+sub_dir = 'all/'
+file_ext='*.ogg'
+all_Anomalyfiles_dryer = glob.glob(os.path.join(parent_dir, sub_dir, file_ext))
+
+
+for i in range(0,len(all_Anomalyfiles_dryer)):
+    my_features = Myextract_features(all_Anomalyfiles_dryer[i])
+    all_anomaly_features.append(my_features)
+    all_anomaly_labels.append("anomaly")
+
+#use reshape to conver outputs into arrays
+dim_1 = len(all_Anomalyfiles)+len(all_Anomalyfiles_dryer)
+dim_2 = my_features.shape[0] #number of features
+dim_3 = my_features.shape[1]
+all_anomaly_features = np.asarray(all_anomaly_features).reshape(dim_1, dim_2, dim_3)
+all_anomaly_labels = np.asarray(all_anomaly_labels).reshape(dim_1)
+
+#check the dimentions
+print(all_anomaly_features.shape)
+print(all_anomaly_labels.shape)
+
+#Merge noraml and anomaly arrays
+all_data = np.concatenate((all_noraml_features,all_anomaly_features),axis=0)
+all_label = np.concatenate((all_noraml_labels,all_anomaly_labels),axis=0)
+
+#check the dimentions
+print(all_data.shape)
+
+#endocding labels
+my_ec = LabelEncoder()
+all_label = my_ec.fit_transform(all_label)
+
+my_ec.transform(["normal"])
+my_ec.inverse_transform(all_label)
+
+
+#split data into train. validation, and test
+X_train, X_test, y_train, y_test = train_test_split(all_data,all_label,test_size=0.1,shuffle=False)
+X_train, X_validation, y_train, y_validation = train_test_split(X_train,y_train,test_size=0.1,shuffle=True)
+
+
+#build a model
+from keras.models import Sequential
+from keras.layers import LSTM, Dropout, Dense
+from keras.losses import SparseCategoricalCrossentropy
+
+n_unit=50
+n_features=X_train.shape[1]
+dim3= X_train.shape[2]
+
+
+#train
+
+pred = model.predict(X_train)
+
+
+y_pred = [y[1] for y in pred] 
+y_pred = [y[0] for y in pred] 
+
+ytrain = [y_train]
+print([y_train])
+print(len(y_train))
+print(len(y_pred))
+ypred = [y_pred]
+print([y_pred])
+
+#mse train
+mean_squared_error(ytrain, ypred, squared=False)
+mean_squared_error(ytrain, ypred, squared=True)
+
+
+#test
+pred = model.predict(X_test)
+
+
+y_pred = [y[1] for y in pred] 
+y_pred = [y[0] for y in pred] 
+
+ytest = [y_test]
+print([y_test])
+print(len(y_test))
+print(len(y_pred))
+ypred = [y_pred]
+print([y_pred])
+
+mean_squared_error(ytest, ypred, squared=False)
+mean_squared_error(ytest, ypred, squared=True)
+
+
+########### compressor
+
+
+
+### import required libraries and pkgs ###
+import glob
+import os
+import librosa
+import numpy as np
+#from sklearn.model_selection import KFold
+#from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+#import tensorflow as tf
+from tensorflow import keras
+import matplotlib.pyplot as plt
+
+
+
+
+
+### Define feature extraction ### defualt=1024 in MATLAB
+#MytimeWindow=1024
+MySampleRate=44100
+#y=audio time series
+#sr=sample rate
+#fn_nfft=fft length 
+#win_length=window size
+#hop_length= overlap length
+
+
+
+
+#get all normal and anomalies files from directory
+
+parent_dir = '/Users/pooyan/Desktop/cmms/class/'
+sub_dir = 'normal/'
+file_ext='*.ogg'
+#all_Normalfiles = glob.glob(os.path.join(parent_dir, sub_dir, file_ext))
+all_files = glob.glob(os.path.join(parent_dir, sub_dir, file_ext))
+
+
+
+#test for a single file
+FilePath = all_files[0]
+
+#load file
+
+y,sr = librosa.load(FilePath, MySampleRate)
+
+
+start_i = 0
+end_i = len(y) # to read whole file
+
+signal = y[start_i:end_i]
+centroid = librosa.feature.spectral_centroid(y=signal,sr=sr)
+slope = librosa.feature.melspectrogram(y=signal,sr=sr, n_mels=1)
+
+my_features = np.concatenate((centroid,slope),axis=0)
+
+#check the dimentions
+print(y.shape)
+print(signal.shape)
+print(centroid.shape)
+print(slope.shape)
+print(my_features.shape)
+
+
+def Myextract_features(filePath, sampleRate=44100):
+    
+    signal,sr = librosa.load(filePath, sampleRate)
+
+    centroid = librosa.feature.spectral_centroid(y=signal,sr=sr)
+    slope = librosa.feature.melspectrogram(y=signal,sr=sr, n_mels=1)
+
+    features = np.concatenate((centroid,slope),axis=0)
+
+    return features
+
+
+my_features = Myextract_features(all_files[1])
+
+import pandas as pd
+
+filenames = pd.read_csv('/Users/pooyan/Documents/CMMS/normal.csv')
+#convert filenames from dataframe to array
+filenames = np.array(filenames['name'].values)
+#read all noraml files
+parent_dir = '/Users/pooyan/Desktop/data_cmms/skytraina_06252019/turbo/'
+sub_dir = 'combine/'
+file_ext='*.ogg'
+#all_Normalfiles = glob.glob(os.path.join(parent_dir, sub_dir, file_ext))[0:3500]
+all_Normalfiles = parent_dir +sub_dir+ filenames #[0:1500]
+
+
+all_noraml_features = [] #define an empty array
+all_noraml_labels = []
+for i in range(0,len(all_Normalfiles)):
+    my_features = Myextract_features(all_Normalfiles[i])
+    all_noraml_features.append(my_features)
+    all_noraml_labels.append("normal")
+
+#use reshape to conver outputs into arrays
+dim_1 = len(all_Normalfiles)
+dim_2 = my_features.shape[0] #number of features
+dim_3 = my_features.shape[1]
+all_noraml_features = np.asarray(all_noraml_features).reshape(dim_1, dim_2, dim_3)
+all_noraml_labels = np.asarray(all_noraml_labels).reshape(dim_1)
+
+#check the dimentions
+print(all_noraml_features.shape)
+print(all_noraml_labels.shape)
+
+#read all anoamly files
+filenames = pd.read_csv('/Users/pooyan/Documents/CMMS/anomaly.csv')
+#convert filenames from dataframe to array
+filenames = np.array(filenames['name'].values)
+
+parent_dir = '/Users/pooyan/Desktop/data_cmms/skytraina_06252019/turbo/'
+sub_dir = 'combine/'
+file_ext='*.ogg'
+#all_Anomalyfiles = glob.glob(os.path.join(parent_dir, sub_dir, file_ext))[0:3500]
+all_Anomalyfiles = parent_dir +sub_dir+ filenames #[0:400]
+
+all_anomaly_features = [] #define an empty array
+all_anomaly_labels = []
+for i in range(0,len(all_Anomalyfiles)):
+    my_features = Myextract_features(all_Anomalyfiles[i])
+    all_anomaly_features.append(my_features)
+    all_anomaly_labels.append("anomaly")
+    
+
+#read comperresor files    
+ 
+parent_dir = '/Users/pooyan/Desktop/crank/'
+sub_dir = 'anomaly/'
+file_ext='*.ogg'
+all_Anomalyfiles_dryer = glob.glob(os.path.join(parent_dir, sub_dir, file_ext))
+
+
+for i in range(0,len(all_Anomalyfiles_dryer)):
+    my_features = Myextract_features(all_Anomalyfiles_dryer[i])
+    all_anomaly_features.append(my_features)
+    all_anomaly_labels.append("anomaly")
+
+#use reshape to conver outputs into arrays
+dim_1 = len(all_Anomalyfiles)+len(all_Anomalyfiles_dryer)
+dim_2 = my_features.shape[0] #number of features
+dim_3 = my_features.shape[1]
+all_anomaly_features = np.asarray(all_anomaly_features).reshape(dim_1, dim_2, dim_3)
+all_anomaly_labels = np.asarray(all_anomaly_labels).reshape(dim_1)
+
+#check the dimentions
+print(all_anomaly_features.shape)
+print(all_anomaly_labels.shape)
+
+#Merge noraml and anomaly arrays
+all_data = np.concatenate((all_noraml_features,all_anomaly_features),axis=0)
+all_label = np.concatenate((all_noraml_labels,all_anomaly_labels),axis=0)
+
+#check the dimentions
+print(all_data.shape)
+
+#endocding labels
+my_ec = LabelEncoder()
+all_label = my_ec.fit_transform(all_label)
+
+my_ec.transform(["normal"])
+my_ec.inverse_transform(all_label)
+
+
+#split data into train. validation, and test
+X_train, X_test, y_train, y_test = train_test_split(all_data,all_label,test_size=0.1,shuffle=True)
+X_train, X_validation, y_train, y_validation = train_test_split(X_train,y_train,test_size=0.1,shuffle=True)
+
+
+len(y_test)
+len(y_train)
+
+#model fit
+history=model.fit(X_train, y_train, validation_data=(X_validation, y_validation),epochs = 50, batch_size = 128, verbose = 1)
+
+
+
+#train
+
+pred = model.predict(X_train)
+
+y_pred = [y[2] for y in pred] 
+y_pred = [y[1] for y in pred] 
+y_pred = [y[0] for y in pred] 
+
+
+ytrain = [y_train]
+print([y_train])
+print(len(y_train))
+print(len(y_pred))
+ypred = [y_pred]
+print([y_pred])
+
+#mse train
+mean_squared_error(ytrain, ypred, squared=False) 
+mean_squared_error(ytrain, ypred, squared=True)
+mean_squared_error(ytrain, ypred)
+MSE = np.square(np.subtract(ytrain,ypred)).mean()
+
+print(MSE)
+#test
+pred = model.predict(X_test)
+
+y_pred = [y[2] for y in pred] 
+y_pred = [y[1] for y in pred] 
+y_pred = [y[0] for y in pred] 
+
+#y_pred = [y[2] for y in pred] 
+
+ytest = [y_test]
+print([y_test])
+print(len(y_test))
+print(len(y_pred))
+ypred = [y_pred]
+print([y_pred])
+
+mean_squared_error(ytest, ypred, squared=False)
+mean_squared_error(ytest, ypred, squared=True)
+
+MSE = np.square(np.subtract(ytest,ypred)).mean()
+print(MSE)
+
+
+#plot confusion matrix
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import mean_squared_error
+
+
+pred = model.predict(X_train)
+
+y_pred = [0 if y[0]>y[1] else 1 for y in pred]   #thereshold=50 y[0]>0.50
+
+cm=confusion_matrix(y_train,y_pred)
+print("train set")
+print("0:%s - 1:%s"%(my_ec.inverse_transform([0])[0],my_ec.inverse_transform([1])[0]))
+print(cm)
+
+accuracy = (cm[0,0]+cm[1,1])/cm.sum()
+precision= (cm[0,0])/(cm[0,0]+cm[1,0])
+recall = (cm[0,0])/(cm[0,0]+cm[0,1])
+f1=2*precision*recall/(precision+recall)
+
+print("accuracy=%.2f f1score=%.2f"%(accuracy, f1))
+print("precision=%.2f recall=%.2f"%(precision, recall))
+
+pred = model.predict(X_test)
+y_pred = [0 if y[0]>y[1] else 1 for y in pred]
+#y_pred = [0 if y[0]>0.9 else 1 for y in pred] 
+#y_pred = [0 if 0.001>y[1] else 1 for y in pred] 
+
+
+cm=confusion_matrix(y_test,y_pred)
+print("test set")
+print("0:%s - 1:%s"%(my_ec.inverse_transform([0])[0],my_ec.inverse_transform([1])[0]))
+print(cm)
+
+
+accuracy = (cm[0,0]+cm[1,1])/cm.sum() #tp+tn/sum
+precision= (cm[0,0])/(cm[0,0]+cm[1,0]) #tp/tp+fp
+recall = (cm[0,0])/(cm[0,0]+cm[0,1]) #tp/tp+fn
+f1=2*precision*recall/(precision+recall)
+
+print("accuracy=%.2f f1score=%.2f"%(accuracy, f1))
+
+
+print("precision=%.2f recall=%.2f"%(precision, recall))
